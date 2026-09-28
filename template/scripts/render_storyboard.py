@@ -18,7 +18,7 @@ def sub(m):
         else: raise SystemExit(f'bad token {m.group(0)}')
     return str(v + off)
 src = open(f'{here}/script/storyboard_src.md', encoding='utf-8').read()
-out = re.sub(r'\{(S\d\d|C\d|TOTAL)(?:\.(from|to|c\d+))?([+-]\d+)?\}', sub, src)
+out = re.sub(r'\{(S\d{2,3}|C\d+|TOTAL)(?:\.(from|to|c\d+))?([+-]\d+)?\}', sub, src)  # 句号可到 S999（长片 >99 句）
 open(f'{here}/分镜表.md', 'w', encoding='utf-8').write(out)
-left = re.findall(r'\{S\d\d[^}]*\}', out)
+left = re.findall(r'\{(?:S\d{2,3}|C\d+|TOTAL)[^}]*\}', out)
 print('written 分镜表.md; unresolved:', left[:5])

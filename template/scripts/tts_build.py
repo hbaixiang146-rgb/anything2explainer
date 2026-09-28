@@ -28,7 +28,9 @@ TTS 引擎（`TTS_ENGINE`，默认 `auto` = 按解说词语言选；**跑之前�
   缩写读错时改写解说词或换引擎。
   用户有别的 TTS 偏好时不走本脚本：让他给成品配音 wav，按逐句/逐块时间轴手填 timeline.ts 与 subs.ts。
 其它环境变量：GAP/CHAPTER_GAP/LEAD/TAIL（帧）、EDGE_TRIES（edge 每句最多试几次，端点会间歇性返回空音频）、
-  HTTPS_PROXY（edge-tts 默认直连、不读代理变量；设了就显式走这个代理——云端沙箱只放行经代理的连接）。
+  HTTPS_PROXY（edge-tts 默认直连、不读代理变量；设了就显式走这个代理——云端沙箱只放行经代理的连接）、
+  ZH_SEP（中文字幕块拼回整句给 TTS 时的连接符，默认空串；设成全角逗号「，」会在块界换气，
+  zh-TW-YunJheNeural 等声音遇到无标点长句会间歇性不返回音频，用它时设 ZH_SEP=，）。
 """
 import asyncio, hashlib, json, os, re, subprocess, sys
 import numpy as np
@@ -78,6 +80,7 @@ def _file_fp(path):
 PIPER_FP = _file_fp(PIPER_MODEL)
 KOKORO_ONNX_FP = f'{_file_fp(KOKORO_ONNX_MODEL)}+{_file_fp(KOKORO_ONNX_VOICES)}'
 EDGE_TRIES = int(os.environ.get('EDGE_TRIES', 4))     # edge-tts 每句最多试几次（端点会间歇性返回空音频）
+ZH_SEP = os.environ.get('ZH_SEP', '')  # 中文字幕块拼回整句时的连接符；zh-TW-YunJheNeural 对无标点长句会间歇性不返回音频，设 ZH_SEP=，
 EDGE_PROXY = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy') or None  # edge-tts 不读代理环境变量，要显式传
 GAP = int(os.environ.get('GAP', 10))          # 段内句间空白帧：只留一口气，不做停顿（用户反馈：小句之间加停顿会显得拖）
 PARA_GAP = int(os.environ.get('PARA_GAP', 20)) # 段末额外空白（narration.txt 用空行分段）：一段话讲完 / 切下一页才停，合计 GAP+PARA_GAP = 30 帧 ≈ 1 s
@@ -402,7 +405,7 @@ async def main(narr):
         print(f"⚠ src/config.ts 的 lang: '{CFG_LANG}' 与解说词语言 {lang} 不一致——改过来，"
               f"否则标题压窄与居中基线会按错的语言算")
     # 字幕块拼回整句给 TTS 时的连接符：英文词与词之间要有空格（否则 "powerful|but" 会被念成 powerfulbut），中文直接拼
-    sep = ' ' if lang == 'en' else ''
+    sep = ' ' if lang == 'en' else ZH_SEP
     t = LEAD / FPS
     audio_parts = []  # (start_sec, np.array)
     sentences = []; chapters = []
