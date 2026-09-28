@@ -87,7 +87,7 @@ export const ChapterCard: React.FC<{card: (typeof CHAPTER_CARDS)[number]}> = ({c
 };
 
 // ---------- 顶部 HUD 胶囊 ----------
-export type HudEntry = {from: number; to: number; text: string; tech?: string; w?: number};
+export type HudEntry = {from: number; to: number; text: string; tech?: string; w?: number; chA: number; chB: number};
 /** HUD 条目由 config.hud 的句 id 解析；章首条目从章节卡结束的下一帧开始（fromOffset 默认：本章第一条 −8，其余 0）。 */
 export const HUD: HudEntry[] = (SENTENCES.length ? VIDEO.hud : []).map((h) => {
   const a = S(h.fromS), b = S(h.toS);
@@ -95,10 +95,12 @@ export const HUD: HudEntry[] = (SENTENCES.length ? VIDEO.hud : []).map((h) => {
   const from = a.from + (h.fromOffset ?? (isChapterFirst ? -8 : 0));
   const isChapterLast = [...SENTENCES].reverse().find((x) => x.chapter === b.chapter)!.id === b.id;
   const to = b.to + (h.toOffset ?? (isChapterLast ? 2 : 0));
-  return {from, to, text: h.text, tech: h.tech, w: h.w};
+  return {from, to, text: h.text, tech: h.tech, w: h.w, chA: a.chapter, chB: b.chapter};
 });
-// 同章相邻条目之间不留空档（G1 提示 742–751 无胶囊）：上一条延到下一条 from−1；跨章节卡（间隔 ≥30 帧）保持空档，由章节卡接管
-for (let i = 0; i < HUD.length - 1; i++) if (HUD[i + 1].from - HUD[i].to < 30) HUD[i].to = HUD[i + 1].from - 1;
+// 同章相邻条目之间不留空档：上一条延到下一条 from−1；跨章（中间是章节卡）保持空档，由章节卡接管。
+// 按章号判断而不是按间隔帧数：段末停留 + `## gap` 可让同章空档 ≥30 帧，按帧数判断会让 HUD 在章内消失。
+const sameCh = (a: HudEntry, b: HudEntry) => a.chB === b.chA;
+for (let i = 0; i < HUD.length - 1; i++) if (sameCh(HUD[i], HUD[i + 1])) HUD[i].to = HUD[i + 1].from - 1;
 export const HUD_RANGE: [number, number] = HUD.length ? [HUD[0].from, HUD[HUD.length - 1].to] : [0, 0];
 const hudW = (h: HudEntry) => h.w ?? Math.max(216, Math.round(h.text.replace(/[^一-龥]/g, '').length * 34 + h.text.replace(/[一-龥\s]/g, '').length * 20 + (h.text.match(/\s/g)?.length ?? 0) * 10 + 60));
 export const Hud: React.FC = () => {
@@ -106,14 +108,14 @@ export const Hud: React.FC = () => {
   const idx = HUD.findIndex((h) => N >= h.from && N <= h.to);
   if (idx < 0) return null;
   const e = HUD[idx];
-  // QC v1 C3：进章节卡前 HUD 一帧消失 → 末 8 帧淡出（只对跨章节卡的条目生效：下一条 from 与本条 to 间隔 ≥30）
-  const nextGap = idx < HUD.length - 1 ? HUD[idx + 1].from - e.to : 999;
-  const fadeTail = nextGap >= 30 ? 1 - clampFrames(N - (e.to - 8), 8) : 1;
+  // QC v1 C3：进章节卡前 HUD 一帧消失 → 末 8 帧淡出（只对跨章节卡的条目生效：下一条在另一章或已是最后一条）
+  const nextSame = idx < HUD.length - 1 && sameCh(e, HUD[idx + 1]);
+  const fadeTail = !nextSame ? 1 - clampFrames(N - (e.to - 8), 8) : 1;
   const w = hudW(e);
   // 终检 v2：同章换词时旧词单帧硬切 + 胶囊从 25% 重新淡入有 1 帧空白 → 胶囊常驻、宽度 10 帧过渡，旧词 6 帧淡出、新词 SoftIn
   const prev = idx > 0 ? HUD[idx - 1] : undefined;
   const n = N - e.from;
-  const sameChapter = !!prev && e.from - prev.to < 30;
+  const sameChapter = !!prev && sameCh(prev, e);
   if (sameChapter && prev && n < 10) {
     const t = easeInOutPow(2.5)(clampFrames(n, 10));
     const wNow = hudW(prev) + (w - hudW(prev)) * t;
