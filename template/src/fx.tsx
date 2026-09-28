@@ -235,7 +235,7 @@ export const Vignette: React.FC<{k: number; alpha?: number; top?: number; topH?:
   const a = (alpha * clamp01(k)).toFixed(3);
   return (
     <>
-      <div style={{position: 'absolute', left: 0, top, width: 1280, height: topH, background: `linear-gradient(180deg, rgba(0,0,0,${a}) 0%, rgba(0,0,0,0) 100%)`}} />
+      <div style={{position: 'absolute', left: 0, top, width: 1280, height: topH, background: `linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,${a}) 28%, rgba(0,0,0,0) 100%)`}} />
       <div style={{position: 'absolute', left: 0, top: 560, width: 1280, height: 127, background: `linear-gradient(0deg, rgba(0,0,0,${a}) 0%, rgba(0,0,0,0) 100%)`}} />
     </>
   );

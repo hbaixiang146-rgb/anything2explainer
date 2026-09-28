@@ -197,6 +197,7 @@ export const DocIcon: React.FC<{x: number; y: number; w?: number; h?: number; li
   const f = w * 0.3;
   return (
     <div style={{...abs(x, y, w, h + (label ? labelSize + 14 : 0)), opacity}}>
+      {glow ? <div style={{position: 'absolute', left: 0, top: 0, width: w, height: h, borderRadius: 3, boxShadow: glow}} /> : null}
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{position: 'absolute', left: 0, top: 0, overflow: 'visible', filter: glow ? undefined : BLOOM_SOFT}}>
         <path d={`M${sw / 2},${sw / 2} H${w - f - sw / 2} L${w - sw / 2},${f + sw / 2} V${h - sw / 2} H${sw / 2} Z`} fill={fill} stroke={color} strokeWidth={sw} strokeLinejoin="round" />
         <path d={`M${w - f - sw / 2},${sw / 2} V${f + sw / 2} H${w - sw / 2}`} fill="none" stroke={color} strokeWidth={sw} strokeLinejoin="round" />
