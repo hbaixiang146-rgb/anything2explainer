@@ -1,5 +1,5 @@
 import React from 'react';
-import {FONT_ORB} from './common/lib';
+import {FONT_ORB, FONT_HEAVY} from './common/lib';
 import {clamp01, easeInOutPow} from './common';
 import {CText, PURPLE, PURPLE_LIGHT, WHITE, GLOW_PURPLE, abs} from './ui';
 
@@ -12,7 +12,7 @@ import {CText, PURPLE, PURPLE_LIGHT, WHITE, GLOW_PURPLE, abs} from './ui';
  *   GhostText              主角文字的白描边轮廓 10% 隐现（预示）
  *   HaloRing               主体脚下的紫色光环（外环内环白描边 + 紫渐变 + 虚线波纹），可分前后半环夹住主体
  *   HeroGlow               给任何矩形主角加双层紫柔光 + 30 帧呼吸
- *   BigNumber / countTo    大数字（Orbitron + 紫硬投影 + 白光），tabular，可计数
+ *   BigNumber / countTo    大数字（Orbitron + 紫硬投影 + 白光），tabular，可计数；「×」自动改用 Noto（Orbitron 的 × 像小写 x）
  *   Sparkle / GradBall     四角小星 / 顶亮底黑小球
  *   TiltPlane              倾斜平面（纵深层）
  *   CameraRig / camAt      定点推近 / 平移 / 整页滚动的相机（世界坐标 → 屏幕）
@@ -138,7 +138,7 @@ export const countTo = (n: number, a: number, b: number, len = 20) => fmtInt(a +
 export const BigNumber: React.FC<{cx: number; cy: number; value: string | number; size?: number; color?: string; family?: string; weight?: number; letterSpacing?: number; shadow?: string; unit?: string; unitSize?: number; unitColor?: string; opacity?: number; dy?: number}> = ({cx, cy, value, size = 110, color = WHITE, family = FONT_ORB, weight = 700, letterSpacing = 2, shadow = `6px 6px 0 ${PURPLE}, 0 0 28px rgba(102,45,248,.45)`, unit, unitSize = 24, unitColor = '#A0A0A1', opacity = 1, dy = -2}) => (
   <>
     <CText cx={cx} cy={cy} size={size} weight={weight} family={family} color={color} letterSpacing={letterSpacing} opacity={opacity} dy={dy} shadow={shadow} style={{fontVariantNumeric: 'tabular-nums'}}>
-      {value}
+      {typeof value === 'string' && value.includes('×') ? value.split(/(×)/).map((part, i) => (part === '×' ? <span key={i} style={{fontFamily: FONT_HEAVY}}>×</span> : part)) : value}
     </CText>
     {unit ? <CText cx={cx} cy={cy + size * 0.62 + unitSize / 2} size={unitSize} weight={600} color={unitColor} opacity={opacity}>{unit}</CText> : null}
   </>
