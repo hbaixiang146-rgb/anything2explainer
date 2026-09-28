@@ -27,7 +27,8 @@ TTS 引擎（`TTS_ENGINE`，默认 `auto` = 按解说词语言选；**跑之前�
   读音覆写表 PRONOUNCE（见下）只作用于 `kokoro` 引擎（misaki 的 [词](/音标/) 语法）；piper / kokoro_onnx 不认这个语法，
   缩写读错时改写解说词或换引擎。
   用户有别的 TTS 偏好时不走本脚本：让他给成品配音 wav，按逐句/逐块时间轴手填 timeline.ts 与 subs.ts。
-其它环境变量：GAP/CHAPTER_GAP/LEAD/TAIL（帧）、EDGE_TRIES（edge 每句最多试几次，端点会间歇性返回空音频）。
+其它环境变量：GAP/CHAPTER_GAP/LEAD/TAIL（帧）、EDGE_TRIES（edge 每句最多试几次，端点会间歇性返回空音频）、
+  HTTPS_PROXY（edge-tts 默认直连、不读代理变量；设了就显式走这个代理——云端沙箱只放行经代理的连接）。
 """
 import asyncio, hashlib, json, os, re, subprocess, sys
 import numpy as np
@@ -77,6 +78,7 @@ def _file_fp(path):
 PIPER_FP = _file_fp(PIPER_MODEL)
 KOKORO_ONNX_FP = f'{_file_fp(KOKORO_ONNX_MODEL)}+{_file_fp(KOKORO_ONNX_VOICES)}'
 EDGE_TRIES = int(os.environ.get('EDGE_TRIES', 4))     # edge-tts 每句最多试几次（端点会间歇性返回空音频）
+EDGE_PROXY = os.environ.get('HTTPS_PROXY') or os.environ.get('https_proxy') or None  # edge-tts 不读代理环境变量，要显式传
 GAP = int(os.environ.get('GAP', 10))          # 段内句间空白帧：只留一口气，不做停顿（用户反馈：小句之间加停顿会显得拖）
 PARA_GAP = int(os.environ.get('PARA_GAP', 20)) # 段末额外空白（narration.txt 用空行分段）：一段话讲完 / 切下一页才停，合计 GAP+PARA_GAP = 30 帧 ≈ 1 s
                                               # —— 这是「末拍元素落位后停 1–1.5 s 再切」的时间来源（composition-and-light.md §7）
@@ -199,7 +201,7 @@ async def synth_edge(text):
     for attempt in range(1, EDGE_TRIES + 1):
         audio = bytearray(); words = []
         try:
-            comm = edge_tts.Communicate(text, VOICE, rate=RATE, boundary='WordBoundary')
+            comm = edge_tts.Communicate(text, VOICE, rate=RATE, boundary='WordBoundary', proxy=EDGE_PROXY)
             async for ch in comm.stream():
                 if ch['type'] == 'audio':
                     audio += ch['data']
