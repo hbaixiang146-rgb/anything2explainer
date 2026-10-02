@@ -4,6 +4,7 @@ import {FONT_HEAVY} from './lib';
 import {kf} from './easing';
 import {fitSize} from './textfit';
 import {TOTAL_FRAMES, CHAPTER_STARTS, SENTENCES} from './timeline';
+import {VIDEO} from '../config';
 
 /**
  * 底部章节进度条（半透明条体 y687–720、填充右缘 x=1280·N/TOTAL、n−1 根分隔线、章节名粗黑斜体 24px），来源于一条 MG 科普原片的实测模型（半透明条体 y687–720、填充右缘 x=1280·N/TOTAL、3 根分隔线、4 个章节名粗黑斜体 24px），
@@ -25,6 +26,8 @@ const cardStart = (c: {n: number; from: number}) => {
 };
 export const CHAPTERS: Array<{text: string; cx: number; from: number}> = CHAPTER_STARTS.map((c, i) => ({text: c.title, cx: CENTERS[i] ?? 640, from: i === 0 ? c.from : cardStart(c)}));
 export const CHAPTER_HIGHLIGHT_END = TOTAL_FRAMES + 1;
+// 填充的分母不算片尾留白（config endingHold）：留白只把压黑往后推，进度条速率不变——成片已渲过、事后才加留白时，只需重渲末段
+const PROGRESS_TOTAL = TOTAL_FRAMES - (VIDEO.endingHold ?? 0);
 export const LABEL_SIZE = 24;
 export const LABEL_SLOT_W = Math.round(1280 / NCH) - 30; // 章名不得压到分隔线上（英文章名长，自动缩到 17px 兜底）
 export const LABEL_SCALE_Y = 0.9;
@@ -42,7 +45,7 @@ export const currentChapter = (N: number) => {
 export const ProgressBar: React.FC<{dimKf?: Array<[number, number]>; frame?: number}> = ({dimKf = [], frame}) => {
   const cur = useCurrentFrame();
   const N = frame ?? cur + 1;
-  const fillW = (1280 * N) / TOTAL_FRAMES;
+  const fillW = Math.min(1280, (1280 * N) / PROGRESS_TOTAL);
   const dim = dimKf.length ? kf(N, dimKf) : 1;
   const ch = currentChapter(N);
   return (

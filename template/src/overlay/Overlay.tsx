@@ -173,7 +173,8 @@ export const Rail: React.FC<{spec: RailSpec}> = ({spec}) => {
 // 压黑层挂在内容之上（Main 里 SHOTS_OVERLAY_TOP 排在所有内容组之后、进度条之下），从末句结束前 endingFade 帧起压黑，末镜头内容在被完全盖住后才结束；
 // 最后 30 帧再用 aboveBar 层把进度条也压黑 → 末段纯黑。
 const LAST_TO = SENTENCES[SENTENCES.length - 1]?.to ?? TOTAL_FRAMES - 60;
-export const ENDING_RANGE: [number, number] = [LAST_TO - VIDEO.endingFade, TOTAL_FRAMES];
+const BLACK_AT = LAST_TO + (VIDEO.endingHold ?? 0);  // 内容全黑的帧（endingHold 见 config）
+export const ENDING_RANGE: [number, number] = [BLACK_AT - VIDEO.endingFade, TOTAL_FRAMES];
 export const Ending: React.FC = () => {
   const N = useCurrentFrame() + ENDING_RANGE[0];
   const n = N - ENDING_RANGE[0];
@@ -181,7 +182,7 @@ export const Ending: React.FC = () => {
   return <div style={{position: 'absolute', inset: 0, background: '#000', opacity: op}} />;
 };
 /** 片尾署名（压黑之后、进度条压黑之前）：完整书名 / 作者 / 出版社，停 ≈3 s，让片头 tagline 读不完的信息在这里补齐（QC v1 C1 #1） */
-export const END_CREDIT_RANGE: [number, number] = [LAST_TO + 1, TOTAL_FRAMES - 26];  // 9110–9182：末句字幕 9109 结束、内容已全黑后再出署名卡（满态 ≈56 帧）；之后 26 帧纯黑
+export const END_CREDIT_RANGE: [number, number] = [BLACK_AT + 1, TOTAL_FRAMES - 26];  // 9110–9182：末句字幕 9109 结束、内容已全黑后再出署名卡（满态 ≈56 帧）；之后 26 帧纯黑
 export const EndCredit: React.FC = () => {
   const N = useCurrentFrame() + END_CREDIT_RANGE[0];
   const n = N - END_CREDIT_RANGE[0];
@@ -207,7 +208,7 @@ export const EndCredit: React.FC = () => {
   );
 };
 // QC v1 C4 #2：进度条不能在画面全黑后孤悬 2 s → 进度条随 endingFade 一起压黑（aboveBar 层），署名卡在其上（见 index.ts 层序）
-export const ENDING_TOP_RANGE: [number, number] = [LAST_TO - VIDEO.endingFade, TOTAL_FRAMES];
+export const ENDING_TOP_RANGE: [number, number] = [BLACK_AT - VIDEO.endingFade, TOTAL_FRAMES];
 export const EndingTop: React.FC = () => {
   const N = useCurrentFrame() + ENDING_TOP_RANGE[0];
   const op = fadeIn(N - ENDING_TOP_RANGE[0], VIDEO.endingFade);

@@ -43,4 +43,7 @@ export const VIDEO = {
   rails: [] as RailSpec[],
   /** 片头帧数（tts_build 的 LEAD+CHAPTER_GAP 决定，通常 85）与片尾压黑 */
   endingFade: 30,
+  /** 末句结束到全黑的帧数：0 = 末句结束时正好全黑（压黑从末句结束前 endingFade 帧开始）；>0 时末镜头在末句念完后再停 endingHold−endingFade 帧才压黑，
+   *  末句是全片结论时用（结论大字可以跟着配音出现，不必前挂）。加多少帧就要给 tts_build 的 TAIL 加多少帧，否则出处卡被截短。 */
+  endingHold: 0,
 };
