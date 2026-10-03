@@ -191,6 +191,20 @@ def write_wav(path, x, sr):
         w.writeframes(pcm.tobytes())
 
 
+# edge-tts 默认输出 audio-24khz-48kbitrate-mono-mp3：48 kbps = 6000 字节/秒，用字节数估时长足够判断截断
+EDGE_BPS = 6000
+
+
+def _words_end(words):
+    return max((w['t'] + w['d'] for w in words), default=0.0)
+
+
+def _edge_truncated(nbytes, words):
+    """端点偶尔只回一小段音频、字词边界却是整句（《英國的勞雇關係》S72：音频 0.24s、边界 5.36s，整句在成片里消失）。
+    音频比最后一个字词边界短 0.3s 以上就当失败重试；不查的话 timeline 里这句只占几帧、字幕块和下一句叠在一起。"""
+    return bool(words) and nbytes / EDGE_BPS < _words_end(words) - 0.3
+
+
 async def synth_edge(text):
     """edge-tts：整句合成 + 词级边界（会把 text 发送到微软云端端点）。
     boundary='WordBoundary' 必须显式传：edge-tts 7.2.0 起该参数默认 'SentenceBoundary'，
@@ -200,7 +214,10 @@ async def synth_edge(text):
     import edge_tts
     mp3 = cache_path(text, '.mp3'); js = cache_path(text, '.json')
     if os.path.exists(mp3) and os.path.exists(js):
-        return mp3, json.load(open(js))
+        words = json.load(open(js))
+        if not _edge_truncated(os.path.getsize(mp3), words):
+            return mp3, words
+        print(f'  ⚠ 缓存里的音频被截断（{os.path.getsize(mp3) / EDGE_BPS:.2f}s < 字词边界 {_words_end(words):.2f}s），重新合成：{text[:16]}…')
     for attempt in range(1, EDGE_TRIES + 1):
         audio = bytearray(); words = []
         try:
@@ -210,9 +227,9 @@ async def synth_edge(text):
                     audio += ch['data']
                 elif ch['type'] == 'WordBoundary':
                     words.append({'t': ch['offset'] / 1e7, 'd': ch['duration'] / 1e7, 'text': ch['text']})
-            if audio:
+            if audio and not _edge_truncated(len(audio), words):
                 break
-            why = '端点返回空音频'
+            why = f'音频被截断（{len(audio) / EDGE_BPS:.2f}s < 字词边界 {_words_end(words):.2f}s）' if audio else '端点返回空音频'
         except TypeError:                # boundary 参数是 edge-tts 7.2.0 才有的
             raise SystemExit("edge-tts 版本过旧：pip install 'edge-tts==7.2.8'")
         except Exception as e:
