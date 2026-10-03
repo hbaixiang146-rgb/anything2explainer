@@ -24,7 +24,8 @@ export const VIDEO = {
   title: {big: 'TOPIC', rest: '主题名', en: 'Full Name of the Topic', tagline: '一句话钩子'},
   // 中英不要并排等大：big 与 rest 是"宽体缩写 + 中文词"（118 / 96px，字号差要看得出）；两个都是长词时只留一个，另一种语言落到 tagline。
   /** 片尾署名卡（内容压黑 + 末句字幕结束后 ≈2 s，aboveBar；不需要就设为 null）。
-   *  例：{kicker: 'BASED ON', title: '<论文 / 书 / 报告标题>', byline: '<作者 · 出处 · 年份>', note: 'all visuals drawn in code'} */
+   *  例：{kicker: 'BASED ON', title: '<论文 / 书 / 报告标题>', byline: '<作者 · 出处 · 年份>', note: 'all visuals drawn in code'}
+   *  byline 长（编著书目、期刊全名）时用 \n 分行：一行超过约 90 个拉丁字符就会溢出 1280 宽的画面。 */
   credit: null as {kicker: string; title: string; byline: string; note: string} | null,
   /** 片尾署名行（默认开）：有署名卡时排在卡下方，没有署名卡时单独居中。不要就设为 ''。 */
   builtBy: 'built by Anything2Explainer skill',

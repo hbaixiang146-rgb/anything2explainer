@@ -191,19 +191,22 @@ export const EndCredit: React.FC = () => {
   const c = VIDEO.credit;
   const by = VIDEO.builtBy;
   if (!c && !by) return null;
+  // byline 可用 \n 分行（书目在 26px 下超过约 90 个拉丁字符就会溢出画面）：首行 26px、其余 22px，行距 30；多出的行高让整张卡上移一半，保持居中
+  const bl = c ? c.byline.split('\n') : [];
+  const extra = Math.max(0, bl.length - 1) * 30, y0 = -extra / 2;
   return (
     <div style={{position: 'absolute', inset: 0, opacity: op}}>
       {c ? (
         <>
-          <CText cx={640} cy={300} size={26} weight={500} color={GREY} letterSpacing={4}>{c.kicker}</CText>
-          <CText cx={640} cy={352} size={40} weight={700} color={WHITE}>{c.title}</CText>
-          <CText cx={640} cy={404} size={26} weight={500} color={GREY}>{c.byline}</CText>
-          <div style={{position: 'absolute', left: 560, top: 440, width: 160, height: 2, background: 'rgba(255,255,255,0.35)', transform: `scaleX(${fadeIn(n - 6, 16)})`}} />
-          <CText cx={640} cy={476} size={22} weight={500} color={GREY}>{c.note}</CText>
+          <CText cx={640} cy={300 + y0} size={26} weight={500} color={GREY} letterSpacing={4}>{c.kicker}</CText>
+          <CText cx={640} cy={352 + y0} size={40} weight={700} color={WHITE}>{c.title}</CText>
+          {bl.map((line, i) => <CText key={i} cx={640} cy={404 + y0 + i * 30} size={i ? 22 : 26} weight={500} color={GREY}>{line}</CText>)}
+          <div style={{position: 'absolute', left: 560, top: 440 + y0 + extra, width: 160, height: 2, background: 'rgba(255,255,255,0.35)', transform: `scaleX(${fadeIn(n - 6, 16)})`}} />
+          <CText cx={640} cy={476 + y0 + extra} size={22} weight={500} color={GREY}>{c.note}</CText>
         </>
       ) : null}
       {/* 片尾署名行（config.builtBy，默认开）：有署名卡时排在卡下方，没有卡时单独居中 */}
-      {by ? <CText cx={640} cy={c ? 524 : 384} size={22} weight={500} color={GREY_MID} letterSpacing={2}>{by}</CText> : null}
+      {by ? <CText cx={640} cy={c ? 524 + y0 + extra : 384} size={22} weight={500} color={GREY_MID} letterSpacing={2}>{by}</CText> : null}
     </div>
   );
 };
